@@ -8,6 +8,8 @@ class CheckinSystem {
         this.recommendedResults = [];
         this.geocoder = null;
         this.checkinRadiusCircle = null;
+        this.longPressTimer = null;
+        this.longPressDelayMs = 600;
         this.checkinHistory = this.loadCheckinHistory();
         
         this.init();
@@ -75,6 +77,12 @@ class CheckinSystem {
 
         // 启用地图点击选点
         this.map.on('click', (e) => this.handleMapClick(e));
+
+        // 长按选点（鼠标与触屏）
+        this.map.on('mousedown', (e) => this.handlePointerDown(e));
+        this.map.on('mouseup', () => this.handlePointerUp());
+        this.map.on('touchstart', (e) => this.handlePointerDown(e));
+        this.map.on('touchend', () => this.handlePointerUp());
     }
 
     // 获取用户位置
@@ -114,8 +122,21 @@ class CheckinSystem {
         }
     }
 
-    // 地图点击处理（选点 + 逆地理解析 + 推荐列表）
+    // 地图点击处理（优先使用已有POI；否则逆地理解析）
     handleMapClick(e) {
+        // 高德在点击现有POI时，事件对象通常包含 e.poi
+        if (e && e.poi && e.poi.location) {
+            const poi = e.poi;
+            const lng = poi.location.lng || (poi.location.getLng && poi.location.getLng());
+            const lat = poi.location.lat || (poi.location.getLat && poi.location.getLat());
+            if (lng != null && lat != null) {
+                this.setSelectedLocationFromLngLat(poi.name || '地图POI', poi.address || '', lng, lat);
+                this.refreshRecommendedNearby(lng, lat);
+                return;
+            }
+        }
+
+        // 否则按点击坐标逆地理解析
         const lng = e.lnglat.getLng();
         const lat = e.lnglat.getLat();
         this.reverseGeocode(lng, lat)
@@ -127,6 +148,27 @@ class CheckinSystem {
                 this.setSelectedLocationFromLngLat('自选位置', '（无详细地址）', lng, lat);
                 this.refreshRecommendedNearby(lng, lat);
             });
+    }
+
+    // 指针按下：启动长按计时器
+    handlePointerDown(e) {
+        // 某些浏览器会同时触发 click，长按后我们不阻止点击，只是在超时后立即选点
+        const lng = e.lnglat.getLng();
+        const lat = e.lnglat.getLat();
+        this.handlePointerUp(); // 清理旧计时
+        this.longPressTimer = setTimeout(() => {
+            this.setSelectedLocationFromLngLat('当前选中地点', '', lng, lat);
+            this.refreshRecommendedNearby(lng, lat);
+            this.showMessage('已选中：当前选中地点', 'success');
+        }, this.longPressDelayMs);
+    }
+
+    // 指针抬起：取消长按
+    handlePointerUp() {
+        if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
     }
 
     // 逆地理解析
