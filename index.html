@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地图打卡系统</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=d0e3595b6918ec62dd0b0c4218bd47b7"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>地图打卡系统</h1>
+            <div class="user-location">
+                <span id="userLocation">正在获取位置...</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="map-section">
+                <div id="mapContainer" class="map-container"></div>
+                <div class="map-controls">
+                    <button id="searchNearby" class="btn btn-primary">搜索周边服务</button>
+                    <button id="getCurrentLocation" class="btn btn-secondary">重新定位</button>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <div class="search-results">
+                    <h3>周边服务</h3>
+                    <div id="searchResults" class="results-list"></div>
+                </div>
+
+                <div class="checkin-section">
+                    <h3>打卡功能</h3>
+                    <div id="selectedLocation" class="selected-location">
+                        <p>请先选择一个地点</p>
+                    </div>
+                    <button id="checkinBtn" class="btn btn-checkin" disabled>打卡</button>
+                    <div id="checkinResult" class="checkin-result"></div>
+                </div>
+
+                <div class="my-checkins">
+                    <h3>我的打卡记录</h3>
+                    <button id="viewMyCheckins" class="btn btn-secondary">查看我的打卡</button>
+                    <div id="myCheckinsList" class="checkins-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 我的打卡弹窗 -->
+    <div id="myCheckinsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>我的打卡记录</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="checkinsHistory" class="checkins-history"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
