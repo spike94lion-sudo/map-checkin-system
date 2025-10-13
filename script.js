@@ -7,6 +7,7 @@ class CheckinSystem {
         this.searchResults = [];
         this.recommendedResults = [];
         this.geocoder = null;
+        this.checkinRadiusCircle = null;
         this.checkinHistory = this.loadCheckinHistory();
         
         this.init();
@@ -184,11 +185,12 @@ class CheckinSystem {
                 poi.location.lat,
                 poi.location.lng
             );
+            const canCheckin = distance <= 400;
             return `
                 <div class="result-item" data-rec-index="${index}">
                     <div class="result-name">${poi.name}</div>
                     <div class="result-address">${poi.address || ''}</div>
-                    <div class="result-distance">距离选点: ${distance.toFixed(0)}米</div>
+                    <div class="result-distance">距离选点: ${distance.toFixed(0)}米 · ${canCheckin ? '可打卡' : '不可打卡'}</div>
                 </div>
             `;
         }).join('');
@@ -290,12 +292,13 @@ class CheckinSystem {
                 poi.location.lat, 
                 poi.location.lng
             );
+            const canCheckin = distance <= 400;
 
             return `
                 <div class="result-item" data-index="${index}">
                     <div class="result-name">${poi.name}</div>
                     <div class="result-address">${poi.address}</div>
-                    <div class="result-distance">距离: ${distance.toFixed(0)}米</div>
+                    <div class="result-distance">距离: ${distance.toFixed(0)}米 · ${canCheckin ? '可打卡' : '不可打卡'}</div>
                 </div>
             `;
         }).join('');
@@ -358,8 +361,24 @@ class CheckinSystem {
             });
             this.map.add(marker);
 
+            // 绘制400米打卡范围圈
+            if (this.checkinRadiusCircle) {
+                this.map.remove(this.checkinRadiusCircle);
+                this.checkinRadiusCircle = null;
+            }
+            this.checkinRadiusCircle = new AMap.Circle({
+                center: [this.selectedLocation.location.lng, this.selectedLocation.location.lat],
+                radius: 400,
+                strokeColor: '#4caf50',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#4caf50',
+                fillOpacity: 0.15,
+            });
+            this.map.add(this.checkinRadiusCircle);
+
             // 调整地图视野
-            this.map.setFitView([marker]);
+            this.map.setFitView([marker, this.checkinRadiusCircle]);
         }
     }
 
