@@ -221,7 +221,9 @@ class CheckinSystem {
         const tryRadiusList = [40, 200, 600];
         const doSearch = (idx) => {
             if (idx >= tryRadiusList.length) {
-                if (container) container.innerHTML = '<div class="empty-state">暂无推荐</div>';
+                if (container) container.innerHTML = '<div class="empty-state">暂无推荐（将使用附近地点兜底）</div>';
+                // 兜底：逆地理解析的POIs
+                this.fallbackRecommendByReverseGeocode(centerLng, centerLat);
                 return;
             }
             const radius = tryRadiusList[idx];
@@ -233,7 +235,9 @@ class CheckinSystem {
                 const service = new AMap.PlaceSearch({
                     type: '餐饮服务|生活服务|购物服务|地名地址信息|公共设施|风景名胜|科教文化服务',
                     pageSize: 20,
-                    pageIndex: 1
+                    pageIndex: 1,
+                    city: 'auto',
+                    citylimit: false
                 });
                 service.searchNearBy('', [centerLng, centerLat], radius, (status, result) => {
                     if (status === 'complete' && result && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
@@ -258,6 +262,39 @@ class CheckinSystem {
             }
         };
         doSearch(0);
+    }
+
+    // 兜底推荐：使用逆地理解析结果中的POIs
+    fallbackRecommendByReverseGeocode(centerLng, centerLat) {
+        if (AMap.plugin) {
+            AMap.plugin('AMap.Geocoder', () => {});
+        }
+        if (!this.geocoder) {
+            this.geocoder = new AMap.Geocoder({});
+        }
+        this.geocoder.getAddress([centerLng, centerLat], (status, result) => {
+            const container = document.getElementById('recommendedList');
+            if (status === 'complete' && result && result.regeocode) {
+                const pois = (result.regeocode.pois || []).map(p => ({
+                    name: p.name,
+                    address: p.address || '',
+                    location: { lng: p.location.lng || (p.location.getLng && p.location.getLng()), lat: p.location.lat || (p.location.getLat && p.location.getLat()) }
+                })).filter(p => p.location.lng != null && p.location.lat != null);
+
+                if (pois.length > 0) {
+                    // 距离排序并取前10
+                    pois.sort((a, b) => {
+                        const da = this.calculateDistance(centerLat, centerLng, a.location.lat, a.location.lng);
+                        const db = this.calculateDistance(centerLat, centerLng, b.location.lat, b.location.lng);
+                        return da - db;
+                    });
+                    this.recommendedResults = pois.slice(0, 10);
+                    this.displayRecommendedList(centerLng, centerLat);
+                    return;
+                }
+            }
+            if (container) container.innerHTML = '<div class="empty-state">附近没有可推荐的地点</div>';
+        });
     }
 
     // 展示推荐列表并可选择
