@@ -10,6 +10,8 @@ class CheckinSystem {
         this.checkinRadiusCircle = null;
         this.longPressTimer = null;
         this.longPressDelayMs = 600;
+        this.pointerDownAtMs = 0;
+        this.pointerDownLngLat = null;
         this.checkinHistory = this.loadCheckinHistory();
         
         this.init();
@@ -80,9 +82,9 @@ class CheckinSystem {
 
         // 长按选点（鼠标与触屏）
         this.map.on('mousedown', (e) => this.handlePointerDown(e));
-        this.map.on('mouseup', () => this.handlePointerUp());
+        this.map.on('mouseup', (e) => this.handlePointerUp(e));
         this.map.on('touchstart', (e) => this.handlePointerDown(e));
-        this.map.on('touchend', () => this.handlePointerUp());
+        this.map.on('touchend', (e) => this.handlePointerUp(e));
     }
 
     // 获取用户位置
@@ -152,23 +154,49 @@ class CheckinSystem {
 
     // 指针按下：启动长按计时器
     handlePointerDown(e) {
-        // 某些浏览器会同时触发 click，长按后我们不阻止点击，只是在超时后立即选点
+        // 记录按下时间与坐标，启动长按定时器
         const lng = e.lnglat.getLng();
         const lat = e.lnglat.getLat();
+        this.pointerDownAtMs = Date.now();
+        this.pointerDownLngLat = { lng, lat };
         this.handlePointerUp(); // 清理旧计时
         this.longPressTimer = setTimeout(() => {
+            // 触发长按选点
             this.setSelectedLocationFromLngLat('当前选中地点', '', lng, lat);
             this.refreshRecommendedNearby(lng, lat);
             this.showMessage('已选中：当前选中地点', 'success');
+            // 长按触发后，重置按下状态
+            this.pointerDownAtMs = 0;
+            this.pointerDownLngLat = null;
         }, this.longPressDelayMs);
     }
 
     // 指针抬起：取消长按
-    handlePointerUp() {
+    handlePointerUp(e) {
+        // 若未达到长按阈值，则视为一次“点击/轻触”，触发点击选点逻辑
+        const now = Date.now();
+        const pressedMs = this.pointerDownAtMs ? (now - this.pointerDownAtMs) : 0;
+        const shortTap = pressedMs > 0 && pressedMs < this.longPressDelayMs;
+
         if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
         }
+
+        if (shortTap && this.pointerDownLngLat) {
+            // 合成一次点击事件，走既有的点击处理（包含POI/逆地理）
+            const synthetic = {
+                lnglat: {
+                    getLng: () => this.pointerDownLngLat.lng,
+                    getLat: () => this.pointerDownLngLat.lat
+                }
+            };
+            this.handleMapClick(synthetic);
+        }
+
+        // 重置
+        this.pointerDownAtMs = 0;
+        this.pointerDownLngLat = null;
     }
 
     // 逆地理解析
