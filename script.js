@@ -22,10 +22,26 @@ class CheckinSystem {
 
     // 绑定事件
     bindEvents() {
-        document.getElementById('searchNearby').addEventListener('click', () => this.searchNearbyServices());
+        document.getElementById('searchNearby').addEventListener('click', () => {
+            const center = this.map.getCenter();
+            const lng = center.getLng();
+            const lat = center.getLat();
+            this.refreshRecommendedNearby(lng, lat);
+        });
         document.getElementById('getCurrentLocation').addEventListener('click', () => this.getUserLocation());
         document.getElementById('checkinBtn').addEventListener('click', () => this.performCheckin());
         document.getElementById('viewMyCheckins').addEventListener('click', () => this.showMyCheckins());
+        const useCenterBtn = document.getElementById('useMapCenterBtn');
+        if (useCenterBtn) {
+            useCenterBtn.addEventListener('click', () => {
+                const center = this.map.getCenter();
+                const lng = center.getLng();
+                const lat = center.getLat();
+                this.reverseGeocode(lng, lat)
+                    .then(({ name, address }) => this.setSelectedLocationFromLngLat(name, address, lng, lat))
+                    .catch(() => this.setSelectedLocationFromLngLat('地图中心', '（无详细地址）', lng, lat));
+            });
+        }
         
         // 模态框关闭事件
         document.querySelector('.close').addEventListener('click', () => this.closeModal());
@@ -49,6 +65,11 @@ class CheckinSystem {
         // 添加地图控件
         this.map.addControl(new AMap.Scale());
         this.map.addControl(new AMap.ToolBar());
+
+        // 预加载必要插件（兼容环境下非必需，但确保稳定）
+        if (AMap.plugin) {
+            AMap.plugin(['AMap.Geocoder', 'AMap.PlaceSearch'], () => {});
+        }
 
         // 启用地图点击选点
         this.map.on('click', (e) => this.handleMapClick(e));
@@ -151,23 +172,43 @@ class CheckinSystem {
 
     // 刷新推荐附近地点列表
     refreshRecommendedNearby(centerLng, centerLat) {
-        try {
-            const service = new AMap.PlaceSearch({
-                type: '餐饮服务|生活服务|购物服务|地名地址信息|公共设施',
-                pageSize: 10,
-                pageIndex: 1
-            });
-            service.searchNearBy('', [centerLng, centerLat], 600, (status, result) => {
-                if (status === 'complete' && result.poiList && result.poiList.pois) {
-                    this.recommendedResults = result.poiList.pois;
-                    this.displayRecommendedList(centerLng, centerLat);
-                } else {
-                    document.getElementById('recommendedList').innerHTML = '<div class="empty-state">暂无推荐</div>';
-                }
-            });
-        } catch (err) {
-            console.error('推荐列表获取失败:', err);
-        }
+        const container = document.getElementById('recommendedList');
+        if (container) container.innerHTML = '<div class="empty-state">正在获取推荐...</div>';
+        const tryRadiusList = [40, 200, 600];
+        const doSearch = (idx) => {
+            if (idx >= tryRadiusList.length) {
+                if (container) container.innerHTML = '<div class="empty-state">暂无推荐</div>';
+                return;
+            }
+            const radius = tryRadiusList[idx];
+            try {
+                const service = new AMap.PlaceSearch({
+                    type: '餐饮服务|生活服务|购物服务|地名地址信息|公共设施|风景名胜|科教文化服务',
+                    pageSize: 20,
+                    pageIndex: 1
+                });
+                service.searchNearBy('', [centerLng, centerLat], radius, (status, result) => {
+                    if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
+                        this.recommendedResults = result.poiList.pois;
+                        // 对40米场景，确保只保留40米内
+                        if (radius === 40) {
+                            this.recommendedResults = this.recommendedResults.filter(p => {
+                                return this.calculateDistance(centerLat, centerLng, p.location.lat, p.location.lng) <= 40;
+                            });
+                        }
+                        // 取前10个
+                        this.recommendedResults = this.recommendedResults.slice(0, 10);
+                        this.displayRecommendedList(centerLng, centerLat);
+                    } else {
+                        doSearch(idx + 1);
+                    }
+                });
+            } catch (err) {
+                console.error('推荐列表获取失败:', err);
+                doSearch(idx + 1);
+            }
+        };
+        doSearch(0);
     }
 
     // 展示推荐列表并可选择
