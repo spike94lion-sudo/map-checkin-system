@@ -68,7 +68,9 @@ class CheckinSystem {
 
         // 预加载必要插件（兼容环境下非必需，但确保稳定）
         if (AMap.plugin) {
-            AMap.plugin(['AMap.Geocoder', 'AMap.PlaceSearch'], () => {});
+            AMap.plugin(['AMap.Geocoder', 'AMap.PlaceSearch'], () => {
+                // 插件预加载完成
+            });
         }
 
         // 启用地图点击选点
@@ -182,13 +184,17 @@ class CheckinSystem {
             }
             const radius = tryRadiusList[idx];
             try {
+                // 若插件尚未就绪，显式加载
+                if (AMap.plugin) {
+                    AMap.plugin('AMap.PlaceSearch', () => {});
+                }
                 const service = new AMap.PlaceSearch({
                     type: '餐饮服务|生活服务|购物服务|地名地址信息|公共设施|风景名胜|科教文化服务',
                     pageSize: 20,
                     pageIndex: 1
                 });
                 service.searchNearBy('', [centerLng, centerLat], radius, (status, result) => {
-                    if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
+                    if (status === 'complete' && result && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
                         this.recommendedResults = result.poiList.pois;
                         // 对40米场景，确保只保留40米内
                         if (radius === 40) {
@@ -200,6 +206,7 @@ class CheckinSystem {
                         this.recommendedResults = this.recommendedResults.slice(0, 10);
                         this.displayRecommendedList(centerLng, centerLat);
                     } else {
+                        // 若返回无数据或状态非complete，递增半径
                         doSearch(idx + 1);
                     }
                 });
