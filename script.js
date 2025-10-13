@@ -5,6 +5,8 @@ class CheckinSystem {
         this.userLocation = null;
         this.selectedLocation = null;
         this.searchResults = [];
+        this.recommendedResults = [];
+        this.geocoder = null;
         this.checkinHistory = this.loadCheckinHistory();
         
         this.init();
@@ -46,6 +48,9 @@ class CheckinSystem {
         // 添加地图控件
         this.map.addControl(new AMap.Scale());
         this.map.addControl(new AMap.ToolBar());
+
+        // 启用地图点击选点
+        this.map.on('click', (e) => this.handleMapClick(e));
     }
 
     // 获取用户位置
@@ -69,6 +74,9 @@ class CheckinSystem {
                     this.addUserMarker();
                     
                     locationElement.textContent = `当前位置: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+                    // 初次获取定位后，刷新推荐列表（以当前位置为中心）
+                    this.refreshRecommendedNearby(this.userLocation.lng, this.userLocation.lat);
                 },
                 (error) => {
                     console.error('获取位置失败:', error);
@@ -82,6 +90,135 @@ class CheckinSystem {
         }
     }
 
+    // 地图点击处理（选点 + 逆地理解析 + 推荐列表）
+    handleMapClick(e) {
+        const lng = e.lnglat.getLng();
+        const lat = e.lnglat.getLat();
+        this.reverseGeocode(lng, lat)
+            .then(({ name, address }) => {
+                this.setSelectedLocationFromLngLat(name, address, lng, lat);
+                this.refreshRecommendedNearby(lng, lat);
+            })
+            .catch(() => {
+                this.setSelectedLocationFromLngLat('自选位置', '（无详细地址）', lng, lat);
+                this.refreshRecommendedNearby(lng, lat);
+            });
+    }
+
+    // 逆地理解析
+    reverseGeocode(lng, lat) {
+        return new Promise((resolve, reject) => {
+            if (!this.geocoder) {
+                this.geocoder = new AMap.Geocoder({});
+            }
+            this.geocoder.getAddress([lng, lat], (status, result) => {
+                if (status === 'complete' && result.info === 'OK' && result.regeocode) {
+                    const formatted = result.regeocode.formattedAddress || '';
+                    resolve({ name: formatted || '地图选点', address: formatted });
+                } else {
+                    reject(new Error('逆地理解析失败'));
+                }
+            });
+        });
+    }
+
+    // 由经纬度设置当前选中地点
+    setSelectedLocationFromLngLat(name, address, lng, lat) {
+        this.selectedLocation = {
+            name: name || '地图选点',
+            address: address || '',
+            location: { lng, lat }
+        };
+
+        // 更新选中UI
+        const selectedDiv = document.getElementById('selectedLocation');
+        const baseLat = this.userLocation ? this.userLocation.lat : lat;
+        const baseLng = this.userLocation ? this.userLocation.lng : lng;
+        const distance = this.calculateDistance(baseLat, baseLng, lat, lng);
+        selectedDiv.innerHTML = `
+            <h4>${this.selectedLocation.name}</h4>
+            <p>地址: ${this.selectedLocation.address || '（无）'}</p>
+            <p>距离当前位置: ${isFinite(distance) ? distance.toFixed(0) : '-'}米</p>
+        `;
+
+        // 启用打卡按钮
+        document.getElementById('checkinBtn').disabled = false;
+
+        // 地图高亮
+        this.addSelectedLocationMarker();
+    }
+
+    // 刷新推荐附近地点列表
+    refreshRecommendedNearby(centerLng, centerLat) {
+        try {
+            const service = new AMap.PlaceSearch({
+                type: '餐饮服务|生活服务|购物服务|地名地址信息|公共设施',
+                pageSize: 10,
+                pageIndex: 1
+            });
+            service.searchNearBy('', [centerLng, centerLat], 600, (status, result) => {
+                if (status === 'complete' && result.poiList && result.poiList.pois) {
+                    this.recommendedResults = result.poiList.pois;
+                    this.displayRecommendedList(centerLng, centerLat);
+                } else {
+                    document.getElementById('recommendedList').innerHTML = '<div class="empty-state">暂无推荐</div>';
+                }
+            });
+        } catch (err) {
+            console.error('推荐列表获取失败:', err);
+        }
+    }
+
+    // 展示推荐列表并可选择
+    displayRecommendedList(centerLng, centerLat) {
+        const container = document.getElementById('recommendedList');
+        if (!this.recommendedResults || this.recommendedResults.length === 0) {
+            container.innerHTML = '<div class="empty-state">暂无推荐</div>';
+            return;
+        }
+
+        container.innerHTML = this.recommendedResults.map((poi, index) => {
+            const distance = this.calculateDistance(
+                centerLat,
+                centerLng,
+                poi.location.lat,
+                poi.location.lng
+            );
+            return `
+                <div class="result-item" data-rec-index="${index}">
+                    <div class="result-name">${poi.name}</div>
+                    <div class="result-address">${poi.address || ''}</div>
+                    <div class="result-distance">距离选点: ${distance.toFixed(0)}米</div>
+                </div>
+            `;
+        }).join('');
+
+        container.querySelectorAll('.result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const idx = parseInt(item.dataset.recIndex);
+                const poi = this.recommendedResults[idx];
+                this.selectedLocation = {
+                    name: poi.name,
+                    address: poi.address || '',
+                    location: { lng: poi.location.lng, lat: poi.location.lat }
+                };
+
+                // 更新UI
+                const selectedDiv = document.getElementById('selectedLocation');
+                const baseLat = this.userLocation ? this.userLocation.lat : poi.location.lat;
+                const baseLng = this.userLocation ? this.userLocation.lng : poi.location.lng;
+                const distance = this.calculateDistance(baseLat, baseLng, poi.location.lat, poi.location.lng);
+                selectedDiv.innerHTML = `
+                    <h4>${this.selectedLocation.name}</h4>
+                    <p>地址: ${this.selectedLocation.address || '（无）'}</p>
+                    <p>距离当前位置: ${isFinite(distance) ? distance.toFixed(0) : '-'}米</p>
+                `;
+
+                document.getElementById('checkinBtn').disabled = false;
+                this.addSelectedLocationMarker();
+            });
+        });
+    }
     // 添加用户位置标记
     addUserMarker() {
         if (this.userLocation) {

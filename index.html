@@ -33,11 +33,17 @@
 
                 <div class="checkin-section">
                     <h3>打卡功能</h3>
+                    <p style="margin:8px 0;color:#666;font-size:0.9rem">提示：可直接在地图上点击选择地点，或从下方推荐列表选择。</p>
                     <div id="selectedLocation" class="selected-location">
                         <p>请先选择一个地点</p>
                     </div>
                     <button id="checkinBtn" class="btn btn-checkin" disabled>打卡</button>
                     <div id="checkinResult" class="checkin-result"></div>
+
+                    <div style="margin-top:16px">
+                        <h4 style="margin-bottom:8px;color:#333">推荐附近地点</h4>
+                        <div id="recommendedList" class="results-list"></div>
+                    </div>
                 </div>
 
                 <div class="my-checkins">
