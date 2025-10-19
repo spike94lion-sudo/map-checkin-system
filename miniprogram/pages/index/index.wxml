@@ -24,6 +24,9 @@
     <button class="btn btn-secondary" bindtap="searchNearby">
       推荐周边地点
     </button>
+    <button class="btn btn-success" bindtap="goToHistory">
+      查看记录
+    </button>
   </view>
 
   <!-- 位置信息 -->

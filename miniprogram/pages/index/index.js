@@ -220,6 +220,13 @@ Page({
     this.selectLocation(item.name, item.address, item.longitude, item.latitude)
   },
 
+  // 跳转到历史记录页面
+  goToHistory() {
+    wx.navigateTo({
+      url: '/pages/history/history'
+    })
+  },
+
   // 计算两点间距离（米）
   calculateDistance(lat1, lng1, lat2, lng2) {
     const R = 6371000 // 地球半径（米）

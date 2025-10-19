@@ -104,8 +104,8 @@ Page({
 
   // 去打卡
   goToMap() {
-    wx.switchTab({
-      url: '/pages/index/index'
+    wx.navigateBack({
+      delta: 1
     })
   },
 

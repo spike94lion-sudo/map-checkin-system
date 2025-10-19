@@ -11,32 +11,6 @@
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f5f5"
   },
-  "tabBar": {
-    "color": "#666666",
-    "selectedColor": "#667eea",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
-    "list": [
-      {
-        "pagePath": "pages/index/index",
-        "text": "地图",
-        "iconPath": "images/map.png",
-        "selectedIconPath": "images/map-active.png"
-      },
-      {
-        "pagePath": "pages/checkin/checkin",
-        "text": "打卡",
-        "iconPath": "images/checkin.png",
-        "selectedIconPath": "images/checkin-active.png"
-      },
-      {
-        "pagePath": "pages/history/history",
-        "text": "记录",
-        "iconPath": "images/history.png",
-        "selectedIconPath": "images/history-active.png"
-      }
-    ]
-  },
   "permission": {
     "scope.userLocation": {
       "desc": "你的位置信息将用于地图定位和打卡功能"
