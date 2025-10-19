@@ -1,0 +1,91 @@
+/* pages/index/index.wxss */
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.map-container {
+  width: 100%;
+  height: 60vh;
+  flex: 1;
+}
+
+.map-controls {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx;
+  background: white;
+  border-top: 1rpx solid #eee;
+}
+
+.map-controls .btn {
+  flex: 1;
+  margin: 0;
+}
+
+.location-info {
+  margin: 0;
+  border-radius: 0;
+  padding: 20rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.location-text {
+  font-size: 28rpx;
+  text-align: center;
+}
+
+.recommendations {
+  max-height: 40vh;
+  margin: 0;
+  border-radius: 0;
+  border-top: 1rpx solid #eee;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.recommend-list {
+  max-height: 30vh;
+}
+
+.recommend-item {
+  padding: 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  background: #fafafa;
+  margin-bottom: 10rpx;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #4caf50;
+}
+
+.recommend-item:active {
+  background: #e3f2fd;
+  transform: scale(0.98);
+}
+
+.item-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.item-address {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.item-distance {
+  font-size: 24rpx;
+  color: #999;
+}

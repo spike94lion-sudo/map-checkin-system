@@ -1,0 +1,59 @@
+<!--pages/index/index.wxml-->
+<view class="container">
+  <!-- 地图容器 -->
+  <map
+    id="mapContainer"
+    class="map-container"
+    longitude="{{longitude}}"
+    latitude="{{latitude}}"
+    scale="{{scale}}"
+    markers="{{markers}}"
+    circles="{{circles}}"
+    show-location="{{showLocation}}"
+    bindtap="onMapTap"
+    bindlongpress="onMapLongPress"
+    bindregionchange="onRegionChange"
+  ></map>
+
+  <!-- 控制按钮 -->
+  <view class="map-controls">
+    <button class="btn btn-primary" bindtap="getCurrentLocation">
+      <text wx:if="{{!loading}}">重新定位</text>
+      <text wx:else class="loading"></text>
+    </button>
+    <button class="btn btn-secondary" bindtap="searchNearby">
+      推荐周边地点
+    </button>
+  </view>
+
+  <!-- 位置信息 -->
+  <view class="location-info card">
+    <view class="location-text">
+      <text wx:if="{{!userLocation}}">正在获取位置...</text>
+      <text wx:else>当前位置: {{userLocation.latitude}}, {{userLocation.longitude}}</text>
+    </view>
+  </view>
+
+  <!-- 推荐列表 -->
+  <view class="recommendations card" wx:if="{{recommendations.length > 0}}">
+    <view class="section-title">推荐附近地点</view>
+    <scroll-view class="recommend-list" scroll-y="true">
+      <view 
+        class="recommend-item" 
+        wx:for="{{recommendations}}" 
+        wx:key="index"
+        bindtap="selectRecommendation"
+        data-index="{{index}}"
+      >
+        <view class="item-name">{{item.name}}</view>
+        <view class="item-address">{{item.address}}</view>
+        <view class="item-distance">
+          距离: {{item.distance}}米 · 
+          <text class="{{item.canCheckin ? 'text-success' : 'text-danger'}}">
+            {{item.canCheckin ? '可打卡' : '不可打卡'}}
+          </text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

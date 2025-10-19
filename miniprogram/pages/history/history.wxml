@@ -1,0 +1,85 @@
+<!--pages/history/history.wxml-->
+<view class="container">
+  <!-- 统计信息 -->
+  <view class="stats-card card">
+    <view class="stats-title">打卡统计</view>
+    <view class="stats-content">
+      <view class="stat-item">
+        <text class="stat-number">{{totalCheckins}}</text>
+        <text class="stat-label">总打卡次数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{thisWeekCheckins}}</text>
+        <text class="stat-label">本周打卡</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{thisMonthCheckins}}</text>
+        <text class="stat-label">本月打卡</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 筛选选项 -->
+  <view class="filter-card card">
+    <view class="filter-title">筛选条件</view>
+    <view class="filter-options">
+      <button 
+        class="filter-btn {{filterType === 'all' ? 'active' : ''}}"
+        bindtap="setFilter"
+        data-type="all"
+      >
+        全部
+      </button>
+      <button 
+        class="filter-btn {{filterType === 'week' ? 'active' : ''}}"
+        bindtap="setFilter"
+        data-type="week"
+      >
+        本周
+      </button>
+      <button 
+        class="filter-btn {{filterType === 'month' ? 'active' : ''}}"
+        bindtap="setFilter"
+        data-type="month"
+      >
+        本月
+      </button>
+    </view>
+  </view>
+
+  <!-- 打卡记录列表 -->
+  <view class="history-list" wx:if="{{checkinHistory.length > 0}}">
+    <view 
+      class="history-item" 
+      wx:for="{{checkinHistory}}" 
+      wx:key="id"
+      bindtap="viewDetail"
+      data-item="{{item}}"
+    >
+      <view class="item-header">
+        <view class="item-location">{{item.locationName}}</view>
+        <view class="item-time">{{item.checkinTime}}</view>
+      </view>
+      <view class="item-address">{{item.locationAddress}}</view>
+      <view class="item-footer">
+        <view class="item-distance">{{item.distance}}米</view>
+        <view class="item-status success">已打卡</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <view class="empty-icon">📝</view>
+    <view class="empty-text">暂无打卡记录</view>
+    <view class="empty-desc">去地图页面选择地点开始打卡吧！</view>
+    <button class="btn btn-primary" bindtap="goToMap">去打卡</button>
+  </view>
+
+  <!-- 清空记录按钮 -->
+  <view class="clear-actions" wx:if="{{checkinHistory.length > 0}}">
+    <button class="btn btn-secondary clear-btn" bindtap="clearHistory">
+      清空所有记录
+    </button>
+  </view>
+</view>

@@ -1,0 +1,65 @@
+<!--pages/checkin/checkin.wxml-->
+<view class="container">
+  <!-- 选中地点信息 -->
+  <view class="location-card card">
+    <view class="location-header">
+      <text class="location-icon">📍</text>
+      <text class="location-title">选中地点</text>
+    </view>
+    <view class="location-info">
+      <view class="location-name">{{locationName}}</view>
+      <view class="location-address">{{locationAddress}}</view>
+      <view class="location-distance">
+        距离当前位置: {{distance}}米
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡状态 -->
+  <view class="checkin-status card" wx:if="{{checkinResult}}">
+    <view class="status-icon {{checkinResult.success ? 'success' : 'error'}}">
+      {{checkinResult.success ? '✓' : '✗'}}
+    </view>
+    <view class="status-text {{checkinResult.success ? 'success' : 'error'}}">
+      {{checkinResult.message}}
+    </view>
+    <view class="status-detail" wx:if="{{checkinResult.detail}}">
+      {{checkinResult.detail}}
+    </view>
+  </view>
+
+  <!-- 打卡按钮 -->
+  <view class="checkin-actions">
+    <button 
+      class="btn btn-success checkin-btn" 
+      bindtap="performCheckin"
+      disabled="{{!canCheckin}}"
+    >
+      <text wx:if="{{!checking}}">立即打卡</text>
+      <text wx:else class="loading">打卡中...</text>
+    </button>
+    
+    <button class="btn btn-secondary" bindtap="goBack">
+      返回地图
+    </button>
+  </view>
+
+  <!-- 打卡规则说明 -->
+  <view class="rules-card card">
+    <view class="rules-title">打卡规则</view>
+    <view class="rules-content">
+      <view class="rule-item">
+        <text class="rule-icon">📍</text>
+        <text>需要在选中地点400米范围内才能打卡</text>
+      </view>
+      <view class="rule-item">
+        <text class="rule-icon">⏰</text>
+        <text>每次打卡都会记录时间和位置信息</text>
+      </view>
+      <view class="rule-item">
+        <text class="rule-icon">📱</text>
+        <text>打卡记录可在"记录"页面查看</text>
+      </view>
+    </view>
+  </view>
+</view>
