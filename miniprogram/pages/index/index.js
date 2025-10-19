@@ -28,6 +28,56 @@ Page({
   getCurrentLocation() {
     this.setData({ loading: true })
     
+    // 先检查定位权限
+    wx.getSetting({
+      success: (res) => {
+        if (res.authSetting['scope.userLocation'] === false) {
+          // 用户拒绝了定位权限，引导开启
+          this.showLocationAuthModal()
+        } else {
+          // 有权限或未询问过，直接获取位置
+          this.requestLocation()
+        }
+      },
+      fail: () => {
+        // 获取设置失败，直接尝试定位
+        this.requestLocation()
+      }
+    })
+  },
+
+  // 显示定位权限引导
+  showLocationAuthModal() {
+    wx.showModal({
+      title: '需要定位权限',
+      content: '地图打卡功能需要获取您的位置信息，请在设置中开启定位权限',
+      confirmText: '去设置',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          wx.openSetting({
+            success: (settingRes) => {
+              if (settingRes.authSetting['scope.userLocation']) {
+                // 用户开启了权限，重新获取位置
+                this.requestLocation()
+              } else {
+                this.setData({ loading: false })
+                wx.showToast({
+                  title: '需要定位权限才能使用',
+                  icon: 'none'
+                })
+              }
+            }
+          })
+        } else {
+          this.setData({ loading: false })
+        }
+      }
+    })
+  },
+
+  // 请求位置信息
+  requestLocation() {
     wx.getLocation({
       type: 'gcj02',
       success: (res) => {
@@ -54,10 +104,26 @@ Page({
         console.error('获取位置失败:', err)
         this.setData({ loading: false })
         
+        // 根据错误类型给出不同提示
+        let errorMsg = '无法获取您的位置'
+        if (err.errMsg.includes('auth deny')) {
+          errorMsg = '定位权限被拒绝，请在设置中开启'
+        } else if (err.errMsg.includes('system deny')) {
+          errorMsg = '系统定位服务未开启'
+        } else if (err.errMsg.includes('network')) {
+          errorMsg = '网络异常，请检查网络连接'
+        }
+        
         wx.showModal({
           title: '定位失败',
-          content: '无法获取您的位置，请检查定位权限设置',
-          showCancel: false
+          content: errorMsg + '，请检查定位权限设置',
+          confirmText: '重新定位',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              this.getCurrentLocation()
+            }
+          }
         })
       }
     })

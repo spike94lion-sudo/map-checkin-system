@@ -114,10 +114,24 @@ Page({
         console.error('获取位置失败:', err)
         this.setData({ checking: false })
         
+        // 根据错误类型给出不同提示
+        let errorMsg = '无法获取当前位置'
+        if (err.errMsg.includes('auth deny')) {
+          errorMsg = '定位权限被拒绝，请开启定位权限'
+        } else if (err.errMsg.includes('system deny')) {
+          errorMsg = '系统定位服务未开启'
+        }
+        
         wx.showModal({
           title: '定位失败',
-          content: '无法获取当前位置，请检查定位权限',
-          showCancel: false
+          content: errorMsg + '，无法完成打卡验证',
+          confirmText: '去设置',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              wx.openSetting()
+            }
+          }
         })
       }
     })
